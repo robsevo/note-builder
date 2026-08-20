@@ -1,0 +1,1274 @@
+<title>Note Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Palette: teal primary · slate navy · pale tint. Light and dark are the same
+   token set with the roles swapped, so every rule below reads from var(). */
+:root{
+  --paper:#FFFFFF; --panel:#F4FBFC; --card:#FFFFFF; --tint:#E4F2F6;
+  --ink:#12283A; --ink2:#3F5A66; --ink3:#5E7A85;
+  --rule:#DCEAEE; --rule2:#C6DCE2;
+  --accent:#14607A; --accent-hi:#1A7A99; --accent-soft:#E4F2F6; --on-accent:#FFFFFF;
+  --sky:#4FB3C9;
+  --navy:#10283A; --hdr-ink:#FFFFFF; --hdr-mute:#A7C2CA;
+  --hdr-field:#FFFFFF; --hdr-field-ink:#12283A; --hdr-line:#164C5E;
+  --warn:#8A5A0B; --warn-soft:#FDF4E3;
+  --stop:#B3261E; --stop-soft:#FDDDDD;
+  --r-field:6px; --r-card:10px; --r-pill:999px;
+  --shadow:0 1px 2px rgba(0,40,85,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#061019; --panel:#0A1B28; --card:#10283A; --tint:#0B475C;
+    --ink:#EEF6F8; --ink2:#AECDD6; --ink3:#8AAAB4;
+    --rule:#0D4155; --rule2:#12556B;
+    --accent:#4FB3C9; --accent-hi:#6FC4D6; --accent-soft:#0C4459; --on-accent:#10283A;
+    --sky:#6FC4D6;
+    --navy:#10283A; --hdr-ink:#EEF6F8; --hdr-mute:#8AAAB4;
+    --hdr-field:#0A1B28; --hdr-field-ink:#EEF6F8; --hdr-line:#12556B;
+    --warn:#E0B25E; --warn-soft:#33290F;
+    --stop:#FF8F88; --stop-soft:#43121A;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#061019; --panel:#0A1B28; --card:#10283A; --tint:#0B475C;
+  --ink:#EEF6F8; --ink2:#AECDD6; --ink3:#8AAAB4;
+  --rule:#0D4155; --rule2:#12556B;
+  --accent:#4FB3C9; --accent-hi:#6FC4D6; --accent-soft:#0C4459; --on-accent:#10283A;
+  --sky:#6FC4D6;
+  --navy:#10283A; --hdr-ink:#EEF6F8; --hdr-mute:#8AAAB4;
+  --hdr-field:#0A1B28; --hdr-field-ink:#EEF6F8; --hdr-line:#12556B;
+  --warn:#E0B25E; --warn-soft:#33290F;
+  --stop:#FF8F88; --stop-soft:#43121A;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-size:14px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:ui-monospace,"Cascadia Mono","Cascadia Code",Consolas,"SF Mono","Roboto Mono","DejaVu Sans Mono",monospace}
+
+/* ---------- app shell ---------- */
+.app{display:flex;flex-direction:column;min-height:100dvh}
+@media(min-width:1000px){ html,body{height:100%;overflow:hidden} .app{height:100dvh} }
+
+/* ---------- ops bar ---------- */
+.opsbar{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:11px 18px;background:var(--navy);color:var(--hdr-ink);
+  border-bottom:3px solid var(--sky);
+}
+.opsbar input{background:var(--hdr-field);color:var(--hdr-field-ink);border-color:var(--hdr-line)}
+.opsbar input::placeholder{color:var(--ink3);opacity:.8}
+.lockup{display:flex;align-items:baseline;gap:9px;margin-right:2px}
+.tag{
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:11px;font-weight:700;letter-spacing:.14em;
+  color:var(--navy);background:#FFFFFF;
+  padding:3px 9px;border-radius:var(--r-pill);
+}
+.lockup h1{
+  margin:0;font-size:16px;font-weight:700;letter-spacing:-.02em;
+  font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;color:var(--hdr-ink);
+}
+.lockup .sub{font-size:11.5px;color:var(--hdr-mute);letter-spacing:.01em}
+
+.sigset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+.sigset label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--hdr-mute);display:block;margin-bottom:3px;font-weight:600}
+.sigset .flabel{color:var(--hdr-mute)}
+.sigset input{width:110px}
+.sigset input.narrow{width:76px}
+.sigset input.tiny{width:58px}
+
+.seg{display:inline-flex;border:1px solid var(--hdr-line);border-radius:var(--r-pill);overflow:hidden;background:transparent}
+.seg button{
+  border:0;background:transparent;color:var(--hdr-mute);cursor:pointer;
+  padding:5px 13px;font-size:12px;font-weight:700;letter-spacing:.05em;
+}
+.seg button[aria-pressed="true"]{background:var(--sky);color:var(--navy)}
+
+/* ---------- inputs ---------- */
+input[type=text],input[type=number],input[type=date],select,textarea{
+  font:inherit;color:var(--ink);background:var(--card);
+  border:1px solid var(--rule2);border-radius:var(--r-field);padding:7px 9px;width:100%;
+}
+input[type=text],input[type=number],textarea,select{font-family:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;font-size:13px}
+textarea{resize:vertical;min-height:60px;line-height:1.45}
+:is(input,select,textarea):focus-visible,button:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent);outline-offset:1px;
+}
+input::placeholder,textarea::placeholder{color:var(--ink3);opacity:.75}
+
+/* ---------- workbench ---------- */
+.workbench{display:grid;grid-template-columns:236px minmax(0,1fr) minmax(360px,430px);gap:1px;background:var(--rule);flex:1;min-height:0}
+.workbench>*{background:var(--paper);min-width:0;overflow-y:auto}
+@media(max-width:1220px){ .workbench{grid-template-columns:220px minmax(0,1fr) minmax(320px,380px)} }
+@media(max-width:999px){
+  .workbench{grid-template-columns:1fr;gap:1px;flex:none}
+  .workbench>*{overflow:visible}
+}
+
+/* ---------- rail ---------- */
+.rail{padding:12px 0 24px;background:var(--panel)}
+.rail h2, .pane h2{
+  font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);
+  margin:16px 14px 7px;font-weight:700;
+}
+.rail h2:first-child{margin-top:2px}
+.stub{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  border:0;border-left:3px solid transparent;background:transparent;color:var(--ink2);
+  padding:7px 14px;cursor:pointer;font:inherit;font-size:13px;
+}
+.stub:hover{background:var(--panel);color:var(--ink)}
+.stub[aria-current="true"]{background:var(--tint);border-left-color:var(--accent);color:var(--accent);font-weight:700}
+.stub .code{
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:10px;color:var(--ink3);letter-spacing:.06em;margin-left:auto;
+}
+.stub[aria-current="true"] .code{color:var(--accent)}
+
+.guidebtn{
+  display:flex;align-items:center;gap:11px;
+  width:calc(100% - 24px);margin:2px 12px 12px;padding:13px 14px;
+  border:0;border-radius:var(--r-card);
+  background:var(--accent);color:var(--on-accent);
+  font:inherit;text-align:left;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,40,85,.20);
+  transition:background .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+.guidebtn:hover{background:var(--accent-hi);box-shadow:0 4px 12px rgba(0,40,85,.28);transform:translateY(-1px)}
+.guidebtn:active{transform:translateY(0)}
+.guidebtn .qmark{
+  flex:none;width:27px;height:27px;border-radius:50%;
+  background:var(--on-accent);color:var(--accent);
+  display:grid;place-items:center;font-size:16px;font-weight:800;line-height:1;
+}
+.guidebtn .txt{min-width:0}
+.guidebtn b{display:block;font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+.guidebtn small{display:block;font-weight:400;font-size:11px;opacity:.88;margin-top:1px}
+.guidebtn .chev{margin-left:auto;flex:none;opacity:.85;font-size:17px;line-height:1}
+
+/* ---------- form pane ---------- */
+.pane{padding:16px 20px 40px}
+.panehead{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:4px}
+.panehead h3{
+  margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--ink);
+}
+.panehead p{margin:3px 0 0;color:var(--ink2);font-size:12.5px;max-width:62ch}
+
+.meter{margin-left:auto;text-align:right;font-size:11px;color:var(--ink3);letter-spacing:.04em}
+.meter b{font-family:ui-monospace,Consolas,monospace;color:var(--ink);font-variant-numeric:tabular-nums}
+.meter .bar{display:block;width:104px;height:3px;background:var(--rule);margin-top:4px;border-radius:2px;overflow:hidden}
+.meter .bar i{display:block;height:100%;background:var(--accent);transition:width .18s ease}
+.meter.done .bar i{background:var(--accent)}
+
+.reqlist{
+  margin:12px 0 18px;padding:11px 14px;background:var(--tint);
+  border:1px solid var(--rule);border-radius:var(--r-card);
+}
+.reqlist strong{
+  display:block;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:6px;font-weight:700;
+}
+.reqlist ul{margin:0;padding-left:16px;font-size:12.5px;color:var(--ink2);columns:2;column-gap:22px}
+@media(max-width:760px){.reqlist ul{columns:1}}
+.reqlist li{margin:1px 0;break-inside:avoid}
+
+.fields{display:grid;grid-template-columns:repeat(12,1fr);gap:12px 14px;align-items:end}
+.f{grid-column:span 12;min-width:0}
+.f.half{grid-column:span 6}
+.f.third{grid-column:span 4}
+@media(max-width:640px){.f.half,.f.third{grid-column:span 12}}
+.f>label,.flabel{
+  display:block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:3px;font-weight:600;
+}
+.f>label .star{color:var(--accent);margin-left:3px}
+.hint{font-size:11px;color:var(--ink3);margin-top:3px;line-height:1.35}
+
+/* fare group */
+.fare{display:grid;grid-template-columns:1fr 14px 1fr 40px 1fr;gap:6px;align-items:center}
+.fare .op{text-align:center;color:var(--ink3);font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.fare .out{
+  font-family:ui-monospace,Consolas,monospace;font-size:13px;font-variant-numeric:tabular-nums;
+  background:var(--tint);border:1px solid var(--rule);border-radius:var(--r-field);
+  padding:6px 8px;color:var(--ink);text-align:right;
+}
+.fare2{display:grid;grid-template-columns:14px 88px auto 1fr;gap:6px;align-items:center;margin-top:6px}
+.paxlab{font-family:ui-monospace,Consolas,monospace;font-size:11px;letter-spacing:.1em;color:var(--ink3)}
+.grand{
+  margin-top:5px;font-size:11.5px;color:var(--ink3);
+  font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;
+}
+.grand b{color:var(--accent)}
+
+/* checkbox rows */
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.chk{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--rule2);border-radius:var(--r-pill);padding:6px 12px;background:var(--card);
+  font-size:12.5px;color:var(--ink2);
+}
+.chk input{accent-color:var(--accent);margin:0;width:13px;height:13px}
+.chk:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:600}
+.chk:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.chip{
+  border:1px solid var(--rule2);background:transparent;color:var(--ink2);
+  border-radius:99px;padding:3px 10px;font:inherit;font-size:11.5px;cursor:pointer;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* notices */
+.notice{
+  display:flex;gap:9px;padding:10px 13px;border-radius:var(--r-card);font-size:12.5px;line-height:1.45;
+  border:1px solid var(--rule2);background:var(--panel);color:var(--ink2);margin:14px 0 0;
+}
+.notice.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--ink)}
+.notice.stop{background:var(--stop-soft);border-color:var(--stop);color:var(--ink)}
+.notice .k{
+  font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;flex:none;padding-top:3px;
+}
+.notice.warn .k{color:var(--warn)} .notice.stop .k{color:var(--stop)}
+
+/* ---------- slip ---------- */
+.slipwrap{padding:16px 18px 28px;display:flex;flex-direction:column;gap:12px}
+.sliphead{display:flex;align-items:center;gap:10px}
+.sliphead h2{margin:0;font-size:15px;letter-spacing:-.01em;color:var(--ink);text-transform:none}
+.count{margin-left:auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums}
+
+.slip{background:var(--card);border:1px solid var(--rule2);border-radius:var(--r-card);position:relative;padding:0;box-shadow:var(--shadow)}
+.perf{height:0;border-top:1px dashed var(--rule2);margin:0 10px}
+.slip pre{
+  margin:0;padding:14px 16px;white-space:pre-wrap;word-break:break-word;
+  font-family:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  font-size:12.5px;line-height:1.55;color:var(--ink);min-height:180px;
+}
+.slip pre .ph{color:var(--ink3);font-style:italic}
+.sliptop,.slipbot{
+  display:flex;justify-content:space-between;padding:6px 12px;
+  font-family:ui-monospace,Consolas,monospace;font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink3);
+}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  border:1px solid var(--rule2);background:var(--card);color:var(--accent);
+  border-radius:var(--r-pill);padding:10px 20px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;
+}
+.btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);flex:1;min-width:150px}
+.btn.primary:hover{background:var(--accent-hi);border-color:var(--accent-hi)}
+.btn.primary.ok{background:var(--accent);}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* ---------- decision guide ---------- */
+.guide{border-bottom:1px solid var(--rule2);background:var(--panel);padding:14px 18px 18px}
+.guide[hidden]{display:none}
+.guide .ghead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.guide h2{margin:0;font-size:17px;letter-spacing:-.02em;color:var(--ink);text-transform:none}
+.crumbs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:11.5px;color:var(--ink3)}
+.crumbs span{font-family:ui-monospace,Consolas,monospace}
+.crumbs span+span::before{content:"›";margin-right:5px;color:var(--rule2)}
+.gq{font-size:16px;font-weight:700;margin:0 0 10px;max-width:70ch;color:var(--ink)}
+.gopts{display:flex;flex-wrap:wrap;gap:7px}
+.gopt{
+  border:1px solid var(--rule2);background:var(--card);color:var(--accent);
+  border-radius:var(--r-pill);padding:9px 20px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+}
+.gopt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.scenarios{margin:8px 0 10px;padding-left:18px;font-size:12.5px;color:var(--ink2);columns:2;column-gap:26px}
+@media(max-width:760px){.scenarios{columns:1}}
+.scenarios li{margin:1px 0;break-inside:avoid}
+.outcome{border-left:4px solid var(--accent);background:var(--card);padding:12px 16px;border-radius:0 var(--r-card) var(--r-card) 0}
+.outcome.no{border-left-color:var(--warn)}
+.outcome .verdict{font-weight:700;font-size:14px;margin:0 0 3px}
+.outcome p{margin:0;font-size:13px;color:var(--ink2)}
+.outcome .where{
+  margin-top:7px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+  color:var(--ink3);letter-spacing:.02em;
+}
+
+/* ---------- rules drawer ---------- */
+details.rules{margin:16px 12px 0;border-top:1px solid var(--rule)}
+details.rules summary{
+  cursor:pointer;padding:10px 2px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink3);font-weight:700;
+}
+details.rules summary:hover{color:var(--accent)}
+details.rules ul{margin:0 0 12px;padding-left:17px;font-size:12px;color:var(--ink2);line-height:1.5}
+details.rules li{margin:4px 0}
+
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);
+  background:var(--navy);color:#fff;padding:10px 20px;border-radius:var(--r-pill);
+  font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;z-index:50;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+
+  <header class="opsbar">
+    <div class="lockup">
+      <span class="tag">DEMO</span>
+      <h1>Note Builder</h1>
+      <span class="sub" id="lblSub">Salesforce manual notes</span>
+    </div>
+
+    <div class="sigset">
+      <div>
+        <label for="sigName" id="lblName">Your name</label>
+        <input type="text" id="sigName" placeholder="Your name" autocomplete="off">
+      </div>
+      <div>
+        <label for="sigExt" id="lblExt">Extension</label>
+        <input type="text" id="sigExt" class="narrow" placeholder="1234" autocomplete="off">
+      </div>
+      <div>
+        <label for="sigDept" id="lblDept">Dept</label>
+        <input type="text" id="sigDept" class="tiny" placeholder="TEAM" autocomplete="off">
+      </div>
+      <div>
+        <span class="flabel" id="lblLang">Language</span>
+        <div class="seg" role="group" aria-label="Note language">
+          <button type="button" id="langEN" aria-pressed="true">EN</button>
+          <button type="button" id="langFR" aria-pressed="false">FR</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="guide" id="guide" hidden aria-label="Decision guide">
+    <div class="ghead">
+      <h2 id="lblGuideTitle">Do I need to leave a note?</h2>
+      <div class="crumbs" id="crumbs"></div>
+      <button type="button" class="btn" id="guideRestart" style="margin-left:auto;padding:5px 11px;font-size:12px">Start over</button>
+      <button type="button" class="btn" id="guideClose" style="padding:5px 11px;font-size:12px">Close</button>
+    </div>
+    <div id="guideBody"></div>
+  </section>
+
+  <div class="workbench">
+
+    <aside class="rail" aria-label="Call types">
+      <button type="button" class="guidebtn" id="guideOpen">
+        <span class="qmark" aria-hidden="true">?</span>
+        <span class="txt">
+          <b id="lblGuideBtn">Do I need a note?</b>
+          <small id="lblGuideBtnSub">Walk the decision tree</small>
+        </span>
+        <span class="chev" aria-hidden="true">&rsaquo;</span>
+      </button>
+
+      <h2 id="lblBooking">Booking notes</h2>
+      <div id="railBooking"></div>
+
+      <h2 id="lblSituation">Situation notes</h2>
+      <div id="railSituation"></div>
+
+      <details class="rules">
+        <summary id="lblRules">Ground rules</summary>
+        <ul id="rulesList"></ul>
+      </details>
+    </aside>
+
+    <main class="pane" id="pane" aria-label="Note details">
+      <div class="panehead">
+        <div>
+          <h3 id="tplTitle">Flight</h3>
+          <p id="tplDesc"></p>
+        </div>
+        <div class="meter" id="meter">
+          <span><span id="lblReq">Required elements</span> <b id="meterTxt">0/0</b></span>
+          <span class="bar"><i id="meterBar" style="width:0%"></i></span>
+        </div>
+      </div>
+
+      <div class="reqlist">
+        <strong id="lblProcReq">The procedure requires</strong>
+        <ul id="reqList"></ul>
+      </div>
+
+      <div class="fields" id="fields"></div>
+
+      <div id="notices"></div>
+    </main>
+
+    <section class="slipwrap" aria-label="Generated note">
+      <div class="sliphead">
+        <h2 id="lblPreview">Note preview</h2>
+        <span class="count" id="charCount">0 char</span>
+      </div>
+
+      <div class="slip">
+        <div class="sliptop"><span id="lblSlipTop">Salesforce · manual note</span><span id="slipLang">EN</span></div>
+        <div class="perf"></div>
+        <pre id="preview"></pre>
+        <div class="perf"></div>
+        <div class="slipbot"><span id="slipType">Flight</span><span id="lblSlipBot">paste as-is</span></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn primary" id="copyBtn">Copy note</button>
+        <button type="button" class="btn" id="clearBtn">Clear fields</button>
+      </div>
+
+      <label class="chk" style="align-self:flex-start">
+        <input type="checkbox" id="correctionMode">
+        <span id="lblCorrection">Correction of an earlier note</span>
+      </label>
+
+      <div class="notice stop">
+        <span class="k" id="lblRuleK">Rule</span>
+        <span id="lblRuleBody">A note can never be deleted once entered. To fix one, tick <b>Correction</b> above and enter a new note.</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================ state ============================ */
+var S = { lang:"en", tpl:"flight", v:{}, correction:false };
+var PH_A = "‹", PH_B = "›";
+
+function t(en,fr){ return S.lang==="fr" ? fr : en; }
+function L(o){ return o ? t(o.en,o.fr) : ""; }
+function val(k){ var x=S.v[k]; return (x===undefined||x===null) ? "" : String(x).trim(); }
+function on(k){ return !!S.v[k]; }
+function num(x){ if(x===undefined||x===null||String(x).trim()==="") return null;
+  var n=parseFloat(String(x).replace(",",".")); return isNaN(n)?null:n; }
+function fmt(n){ return (n===null?0:n).toFixed(2); }
+function need(k,lab){ var x=val(k); return x ? x : PH_A+lab+PH_B; }
+
+/* ============================ field helper ============================ */
+function F(k,en,fr,o){ o=o||{}; o.k=k; o.en=en; o.fr=fr; o.type=o.type||"text"; return o; }
+
+var CALLER = [
+  F("role","Caller","Interlocuteur",{type:"select",w:"third",def:"Client",
+     opts:[{v:"Client",en:"Client",fr:"Client"},{v:"Agent",en:"Agent",fr:"Agent"}]}),
+  F("cname","Name of the person who called","Nom de la personne qui a appelé",{w:"third",req:1,ph:"Jordan"}),
+  F("seg","Called for","A appelé pour",{w:"third",req:1,ph:"B2C",chips:["B2C","B2B","Leisure","Groups"]})
+];
+
+var ADVISED = F("adv","Advised / sent during the call","Communiqué / envoyé pendant l'appel",{type:"checks",items:[
+  {k:"cInvoice",en:"Sent invoice to the pax via email",fr:"Facture envoyée au pax par courriel"},
+  {k:"cEdocs",  en:"Sent Edocs to the pax via email",  fr:"Edocs envoyés au pax par courriel"},
+  {k:"cTerms",  en:"All terms & conditions advised",   fr:"Toutes les conditions générales ont été communiquées"},
+  {k:"cInsOk",  en:"Insurance accepted kk conditions", fr:"Assurance acceptée kk conditions"},
+  {k:"cInsNo",  en:"Insurance declined",               fr:"Assurance refusée"}
+]});
+
+var TAIL = [
+  F("kids","Ages of children 2-11","Âge des enfants de 2 à 11 ans",{w:"half",ph:"5, 8",
+    hint:{en:"Mandatory whenever children 2-11 travel.",fr:"Obligatoire dès qu'un enfant de 2 à 11 ans voyage."}}),
+  F("payAmt","Payment applied","Paiement appliqué",{w:"half",ph:"1199.00"}),
+  F("refundAmt","Refund issued","Remboursement émis",{w:"half",ph:""}),
+  F("extra","Anything else said or done","Autre information donnée ou action posée",{type:"area",
+    hint:{en:"Summarize every piece of information given and every action taken.",
+          fr:"Résumez toute information donnée et toute action posée."}})
+];
+
+function advisedLines(){
+  var out=[];
+  ADVISED.items.forEach(function(i){ if(on(i.k)) out.push(L(i)); });
+  return out;
+}
+function tailLines(){
+  var out=[];
+  if(val("kids"))      out.push(t("Children ages: ","Âge des enfants : ")+val("kids"));
+  if(val("payAmt"))    out.push(t("Payment applied: ","Paiement appliqué : ")+val("payAmt"));
+  if(val("refundAmt")) out.push(t("Refund issued: ","Remboursement émis : ")+val("refundAmt"));
+  if(val("extra"))     out.push(val("extra"));
+  return out;
+}
+function head(){
+  var role = val("role")||"Client";
+  var nm   = need("cname",t("name","nom"));
+  var seg  = need("seg",t("segment","segment"));
+  return t(role+" "+nm+" called for "+seg+":", role+" "+nm+" a appelé pour "+seg+" :");
+}
+function fareField(k,en,fr,o){ o=o||{}; o.type="fare"; return F(k,en,fr,o); }
+function fareLine(k,lab){
+  var b=num(S.v[k+"_b"]), x=num(S.v[k+"_t"]), p=val(k+"_p");
+  if(b===null && x===null && !p) return null;
+  return lab+t(": "," : ")+fmt(b)+" + "+fmt(x)+"tx = "+fmt((b||0)+(x||0))+" x "+(p||"1")+" PAX";
+}
+function fareFilled(k){ return !!(val(k+"_b")||val(k+"_t")||val(k+"_p")); }
+
+/* ============================ templates ============================ */
+var TPL = [
+{ id:"flight", code:"FLT", group:"booking", name:{en:"Flight",fr:"Vol"},
+  desc:{en:"Air-only booking or change. The fare is per passenger, multiplied by the passenger count.",
+        fr:"Réservation ou modification vol seulement. Le tarif est par passager, multiplié par le nombre de passagers."},
+  req:[{en:"Itinerary / dates",fr:"Itinéraire / dates"},
+       {en:"Class of service / web fare type",fr:"Classe de service / type de tarif web"},
+       {en:"Fare: base + taxes = total x number of passengers",fr:"Tarif : base + taxes = total x nombre de passagers"}],
+  fields:[].concat(CALLER,[
+    F("purpose","Reason for the call","Raison de l'appel",{req:1,ph:"to book a flight:",phFr:"pour réserver un vol :",
+      chips:["to book a flight:","to modify the reservation:","to apply a payment:","to cancel the reservation:","for information on the file:"],chipsFr:["pour réserver un vol :","pour modifier la réservation :","pour appliquer un paiement :","pour annuler la réservation :","pour information sur le dossier :"]}),
+    F("itin","Itinerary / dates","Itinéraire / dates",{w:"half",req:1,ph:"YUL-CUN 14-21jun"}),
+    F("cls","Class / Ecofare","Classe / Écotarif",{w:"half",req:1,ph:"ECO STD/ECO STD"}),
+    fareField("fareA","Fare","Tarif",{req:1}),
+    ADVISED],TAIL),
+  build:function(){
+    var o=[head(),""];
+    if(val("purpose")) o.push(val("purpose"));
+    o.push(t("Itinerary/dates : ","Itinéraire/dates : ")+need("itin",t("itinerary/dates","itinéraire/dates")));
+    o.push(t("Class/Ecofare: ","Classe/Écotarif : ")+need("cls",t("class/fare type","classe/type de tarif")));
+    o.push(fareLine("fareA",t("Fare","Tarif")) || PH_A+t("fare: base + taxes = total x PAX","tarif : base + taxes = total x PAX")+PH_B);
+    return o.concat([""],advisedLines(),[""],tailLines());
+  }},
+
+{ id:"hotel", code:"HTL", group:"booking", name:{en:"Hotel",fr:"Hôtel"},
+  desc:{en:"Hotel-only booking. Adult and child fares go on separate lines.",
+        fr:"Réservation hôtel seulement. Les tarifs adulte et enfant vont sur des lignes distinctes."},
+  req:[{en:"Hotel name / room category / occupancy",fr:"Nom de l'hôtel / catégorie de chambre / occupation"},
+       {en:"Arrival date / departure date",fr:"Date d'arrivée / date de départ"},
+       {en:"Fare: base + taxes = total x number of passengers",fr:"Tarif : base + taxes = total x nombre de passagers"}],
+  fields:[].concat(CALLER,[
+    F("purpose","Reason for the call","Raison de l'appel",{req:1,ph:"To book a hotel:",phFr:"Pour réserver un hôtel :",
+      chips:["To book a hotel:","To modify the hotel:","to apply a payment:","to cancel the hotel:"],chipsFr:["Pour réserver un hôtel :","Pour modifier l'hôtel :","pour appliquer un paiement :","pour annuler l'hôtel :"]}),
+    F("dates","Arrival / departure dates","Dates d'arrivée / de départ",{w:"half",req:1,ph:"06-13aug"}),
+    F("hotelRoom","Hotel / Room category","Hôtel / Catégorie de chambre",{w:"half",req:1,ph:"Disneys All star sports STD RM"}),
+    F("occ","Occupancy","Occupation",{req:1,ph:"DBL + children 5 - 8 yrs",phFr:"DBL + enfants 5 - 8 ans",chips:["SGL","DBL","TPL","QUAD"]}),
+    fareField("fareA","Adult fare","Tarif adulte",{req:1}),
+    fareField("fareC","Child fare","Tarif enfant"),
+    ADVISED],TAIL),
+  build:function(){
+    var o=[head(),""];
+    if(val("purpose")) o.push(val("purpose"));
+    o.push(t("Itinerary/dates: ","Itinéraire/dates : ")+need("dates",t("arrival/departure","arrivée/départ")));
+    o.push(t("Hotel / Room: ","Hôtel / Chambre : ")+need("hotelRoom",t("hotel / room category","hôtel / catégorie")));
+    o.push(t("Occupancy: ","Occupation : ")+need("occ",t("occupancy","occupation")));
+    o.push(fareLine("fareA",t("Fare Adult","Tarif adulte")) || PH_A+t("adult fare","tarif adulte")+PH_B);
+    var fc=fareLine("fareC",t("Fare Child","Tarif enfant")); if(fc) o.push(fc);
+    return o.concat([""],advisedLines(),[""],tailLines());
+  }},
+
+{ id:"package", code:"PKG", group:"booking", name:{en:"Package",fr:"Forfait"},
+  desc:{en:"Flight plus hotel or ship. The final payment date must reflect the Book Early option when it applies.",
+        fr:"Vol avec hôtel ou navire. La date de paiement final doit tenir compte de l'option Réservez Tôt s'il y a lieu."},
+  req:[{en:"City of departure / destination / dates and class of service",fr:"Ville de départ / destination / dates et classe de service"},
+       {en:"Hotel or ship name / room or cabin category / occupancy",fr:"Nom de l'hôtel ou du navire / catégorie de chambre ou cabine / occupation"},
+       {en:"Fare: base + taxes = total x number of passengers",fr:"Tarif : base + taxes = total x nombre de passagers"},
+       {en:"Final payment date, Book Early if applicable",fr:"Date de paiement final, Réservez Tôt s'il y a lieu"}],
+  fields:[].concat(CALLER,[
+    F("purpose","Reason for the call","Raison de l'appel",{req:1,ph:"to book a package:",phFr:"pour réserver un forfait :",
+      chips:["to book a package:","to modify the package:","to apply a payment:","to cancel the package:"],chipsFr:["pour réserver un forfait :","pour modifier le forfait :","pour appliquer un paiement :","pour annuler le forfait :"]}),
+    F("itin","Itinerary / dates / class","Itinéraire / dates / classe",{w:"half",req:1,ph:"YYZ-MBJ 21-28May"}),
+    F("hotelRoom","Hotel or ship / Room or cabin","Hôtel ou navire / Chambre ou cabine",{w:"half",req:1,ph:"Playa Verde Resort / Jr Ste Ocean View"}),
+    F("occ","Occupancy","Occupation",{w:"half",req:1,ph:"DBL",chips:["SGL","DBL","TPL","QUAD"]}),
+    F("finalPay","Final payment date","Date de paiement final",{w:"half",req:1,ph:"12mar"}),
+    fareField("fareA","Fare","Tarif",{req:1}),
+    F("bookEarly","","",{type:"checks",items:[{k:"cBookEarly",en:"Book Early option applied",fr:"Option Réservez Tôt appliquée"}]}),
+    F("prodQ","Questions on the product / destination","Questions sur le produit / là destination",{type:"area",ph:"Advise golf is not included",phFr:"Aviser que le golf n'est pas inclus"}),
+    ADVISED],TAIL),
+  build:function(){
+    var o=[head(),""];
+    if(val("purpose")) o.push(val("purpose"));
+    o.push(t("Itinerary/dates: ","Itinéraire/dates : ")+need("itin",t("city pair / dates / class","paire de villes / dates / classe")));
+    o.push(t("Hotel / Room: ","Hôtel / Chambre : ")+need("hotelRoom",t("hotel or ship / room or cabin","hôtel ou navire / chambre ou cabine")));
+    o.push(t("Occupancy: ","Occupation : ")+need("occ",t("occupancy","occupation")));
+    o.push(fareLine("fareA",t("Fare","Tarif")) || PH_A+t("fare: base + taxes = total x PAX","tarif : base + taxes = total x PAX")+PH_B);
+    o.push(t("Final payment date: ","Date de paiement final : ")+need("finalPay",t("date","date"))+
+           (on("cBookEarly") ? t(" (Book Early option applied)"," (option Réservez Tôt appliquée)") : ""));
+    o=o.concat([""],advisedLines());
+    if(val("prodQ")) o=o.concat(["",t("Questions regarding product/destination info: ","Questions sur le produit/là destination : ")+val("prodQ")]);
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"tour", code:"TUR", group:"booking", name:{en:"Tour",fr:"Circuit"},
+  desc:{en:"Coach tour package. Whether the departure is guaranteed must be stated either way.",
+        fr:"Forfait circuit en autocar. Le caractère garanti ou non du départ doit être indiqué dans les deux cas."},
+  req:[{en:"City of departure / destination / dates and class of service",fr:"Ville de départ / destination / dates et classe de service"},
+       {en:"Coach tour name / occupancy",fr:"Nom du circuit / occupation"},
+       {en:"Guaranteed departure or not",fr:"Départ garanti ou non"},
+       {en:"Fare: base + taxes = total x number of passengers",fr:"Tarif : base + taxes = total x nombre de passagers"}],
+  fields:[].concat(CALLER,[
+    F("purpose","Reason for the call","Raison de l'appel",{req:1,ph:"to book a Tour package:",phFr:"pour réserver un circuit :",
+      chips:["to book a Tour package:","to modify the Tour package:","to apply a payment:"],chipsFr:["pour réserver un circuit :","pour modifier le circuit :","pour appliquer un paiement :"]}),
+    F("itin","Itinerary / dates / class","Itinéraire / dates / classe",{w:"half",req:1,ph:"YUL-LIS OPO-YUL 15-23sep ECO/ECO"}),
+    F("tourName","Coach tour name","Nom du circuit",{w:"half",req:1,ph:"Tuscan Classic"}),
+    F("occ","Occupancy","Occupation",{w:"half",req:1,ph:"DBL",chips:["SGL","DBL","TPL","QUAD"]}),
+    F("guaranteed","Departure guaranteed?","Départ garanti ?",{type:"select",w:"half",req:1,def:"",
+      opts:[{v:"",en:"- select -",fr:"- choisir -"},{v:"yes",en:"Yes, guaranteed",fr:"Oui, garanti"},{v:"no",en:"No, not guaranteed",fr:"Non, non garanti"}]}),
+    fareField("fareA","Fare","Tarif",{req:1}),
+    F("destFees","Fees payable at destination","Frais payables à destination",{type:"area",ph:"local lodging tax of aprox. 3 euros per pers per night",phFr:"taxe de séjour locale d'environ 3 euros par pers par nuit"}),
+    ADVISED],TAIL),
+  build:function(){
+    var o=[head(),""];
+    if(val("purpose")) o.push(val("purpose"));
+    o.push(t("Itinerary/dates: ","Itinéraire/dates : ")+need("itin",t("city pair / dates / class","paire de villes / dates / classe")));
+    o.push(t("Hotel / Room: ","Hôtel / Chambre : ")+need("tourName",t("coach tour name","nom du circuit")));
+    o.push(t("Occupancy: ","Occupation : ")+need("occ",t("occupancy","occupation")));
+    o.push(fareLine("fareA",t("Fare","Tarif")) || PH_A+t("fare: base + taxes = total x PAX","tarif : base + taxes = total x PAX")+PH_B);
+    o=o.concat([""],advisedLines(),[""]);
+    var g=val("guaranteed");
+    o.push(g==="yes" ? t("Departure is guaranteed","Le départ est garanti")
+         : g==="no"  ? t("Departure is not guaranteed","Le départ n'est pas garanti")
+         : PH_A+t("departure guaranteed or not","départ garanti ou non")+PH_B);
+    if(val("destFees")) o=o.concat(["",t("Advised fees payable at destination: ","Frais payables à destination avisés : ")+val("destFees")]);
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"csc", code:"CSC", group:"situation", name:{en:"CSC follow-up",fr:"Suivi CSC"},
+  desc:{en:"Customer service claim follow-up. Always quote the CSC case number.",
+        fr:"Suivi d'une réclamation au service à la clientèle. Toujours citer le numéro de dossier CSC."},
+  req:[{en:"Reason for the claim",fr:"Raison de la réclamation"},
+       {en:"Follow-up requested",fr:"Suivi demandé"},
+       {en:"CSC case number",fr:"Numéro de dossier CSC"}],
+  fields:[].concat(CALLER,[
+    F("claimReason","Reason for the claim","Raison de la réclamation",{type:"area",req:1,
+      ph:"Originally booked ocean view rm and got garden view at destination",phFr:"Chambre vue océan réservée à l'origine, vue jardin obtenue à destination"}),
+    F("caseNo","CSC case number","Numéro de dossier CSC",{w:"half",req:1,ph:"00000000"}),
+    F("openSince","Open since","Ouvert depuis",{w:"half",ph:"July 5",phFr:"5 juillet"}),
+    F("sacFlags","","",{type:"checks",items:[
+      {k:"cLimit",en:"30-day time limit exceeded",fr:"Délai de 30 jours dépassé"},
+      {k:"cFollow",en:"PAX requests follow-up",fr:"Le PAX demande un suivi"}]}),
+    F("followUp","Follow-up requested / action taken","Suivi demandé / action posée",{type:"area",req:1,
+      ph:"Case escalated to CSC, pax advised of the delay",phFr:"Dossier escaladé au CSC, pax avisé du délai"})],TAIL),
+  build:function(){
+    var o=[head(),""];
+    o.push(need("claimReason",t("reason for the claim","raison de la réclamation")),"");
+    var line=t("CSC case number ","Dossier CSC no ")+need("caseNo",t("case number","numéro de dossier"));
+    if(val("openSince")) line+=t(" is open since "," ouvert depuis le ")+val("openSince");
+    var flags=[];
+    if(on("cLimit"))  flags.push(t("30-day time limit exceeded","délai de 30 jours dépassé"));
+    if(on("cFollow")) flags.push(t("PAX requests follow-up","le PAX demande un suivi"));
+    if(flags.length) line+=", "+flags.join(", ");
+    o.push(line);
+    o=o.concat(["",need("followUp",t("follow-up requested","suivi demandé"))]);
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"escalation", code:"ESC", group:"situation", name:{en:"Call escalation",fr:"Appel escaladé"},
+  desc:{en:"Call transferred to a lead. Name the lead who took the call.",
+        fr:"Appel transféré à un lead. Nommez le lead qui a pris l'appel."},
+  req:[{en:"Reason for the call escalation",fr:"Raison de l'escalade"},
+       {en:"Name of the lead who took the call",fr:"Nom du lead qui a pris l'appel"}],
+  fields:[].concat(CALLER,[
+    F("escReason","Reason for the escalation","Raison de l'escalade",{type:"area",req:1,
+      ph:"Booked in ECO BGT, wants to change dates. Not possible with ecofare.",phFr:"Réservé en ECO BGT, veut changer les dates. Impossible avec l'écotarif."}),
+    F("escFlags","","",{type:"checks",items:[
+      {k:"cNoFavor",en:"No favor allowed",fr:"Aucune faveur permise"},
+      {k:"cFormSent",en:"Escalation form sent to lead Agents",fr:"Formulaire d'escalade envoyé aux Agents lead"}]}),
+    F("lead","Lead who took the call","Lead qui a pris l'appel",{w:"half",req:1,ph:"Sam"})],TAIL),
+  build:function(){
+    var o=[head(),""];
+    o.push(need("escReason",t("reason for the escalation","raison de l'escalade")),"");
+    var line=[];
+    if(on("cNoFavor")) line.push(t("No favor allowed","Aucune faveur permise"));
+    line.push(t("call transferred to lead ","appel transféré au lead ")+need("lead",t("lead name","nom du lead")));
+    o.push(line.join(", "));
+    if(on("cFormSent")) o.push(t("Escalation form sent to lead Agents","Formulaire d'escalade envoyé aux Agents lead"));
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"favour", code:"FAV", group:"situation", name:{en:"Favour",fr:"Faveur"},
+  desc:{en:"A favour asked of a lead. Record the decision and who made it, accepted or denied.",
+        fr:"Faveur demandée à un lead. Notez la décision et qui l'a rendue, acceptée ou refusée."},
+  req:[{en:"Favour requested",fr:"Faveur demandée"},
+       {en:"Accepted or denied",fr:"Acceptee ou refusée"},
+       {en:"Lead who gave the information",fr:"Lead qui a donné l'information"}],
+  fields:[].concat(CALLER,[
+    F("favReq","Favour requested","Faveur demandée",{type:"area",req:1,
+      ph:"Wants to upgrade room less than 24 hours from departure",phFr:"Veut surclasser la chambre à moins de 24 heures du départ"}),
+    F("favDec","Decision","Décision",{type:"select",w:"half",req:1,def:"",
+      opts:[{v:"",en:"- select -",fr:"- choisir -"},{v:"ok",en:"Accepted",fr:"Acceptée"},{v:"no",en:"Denied",fr:"Refusée"}]}),
+    F("favLead","Lead who gave the decision","Lead qui a rendu la décision",{w:"half",req:1,ph:"Sam"})],TAIL),
+  build:function(){
+    var o=[head(),""];
+    o.push(need("favReq",t("favour requested","faveur demandée")),"");
+    var d=val("favDec"), lead=need("favLead",t("lead name","nom du lead"));
+    o.push(d==="ok" ? t("KK favor accepted by lead ","KK faveur acceptée par le lead ")+lead
+         : d==="no" ? t("Favor denied by lead ","Faveur refusée par le lead ")+lead
+         : PH_A+t("accepted or denied","acceptée ou refusée")+PH_B+" - "+lead);
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"auth", code:"AUT", group:"situation", name:{en:"File access authorization",fr:"Autorisation d'accès au dossier"},
+  desc:{en:"Someone else is authorized to access the file. State whether it was granted, and paste the email received in Validation.",
+        fr:"Une autre personne est autorisée à accéder au dossier. Indiquez si l'autorisation est accordée et collez le courriel reçu dans Validation."},
+  req:[{en:"Name of the person authorized to access the file",fr:"Nom de la personne autorisée à accéder au dossier"},
+       {en:"Whether the authorization was granted or not",fr:"Si l'autorisation a été accordée ou non"},
+       {en:"Copy of the email received in Validation",fr:"Copie du courriel reçu dans Validation"}],
+  fields:[].concat(CALLER,[
+    F("authRel","Relationship","Lien",{w:"half",ph:"his daughter",phFr:"sa fille",
+      chips:["his daughter","his son","his spouse","his mother","his father","the travel agent"],chipsFr:["sa fille","son fils","son conjoint","sa mère","son père","l'agent de voyages"]}),
+    F("authPerson","Person authorized","Personne autorisée",{w:"half",req:1,ph:"Alex Rivera"}),
+    F("authGranted","Authorization","Autorisation",{type:"select",w:"half",req:1,def:"",
+      opts:[{v:"",en:"- select -",fr:"- choisir -"},{v:"ok",en:"Granted",fr:"Accordée"},{v:"no",en:"Not granted",fr:"Refusée"}]}),
+    F("authEmail","Email received in Validation","Courriel reçu dans Validation",{type:"area",req:1,
+      ph:"Hello, by this email I authorize my daughter Alex Rivera to modify my file.",phFr:"Bonjour, par ce courriel j'autorise ma fille Alex Rivera à modifier mon dossier."})],TAIL),
+  build:function(){
+    var o=[head(),""];
+    var who=(val("authRel")?val("authRel")+" ":"")+need("authPerson",t("name of the person","nom de la personne"));
+    o.push(t("Authorizes "+who+" to access the file","Autorise "+who+" à accéder au dossier"),"");
+    var g=val("authGranted");
+    o.push(g==="ok" ? t("Authorization granted","Autorisation accordée")
+         : g==="no" ? t("Authorization not granted","Autorisation refusée")
+         : PH_A+t("granted or not granted","accordée ou refusée")+PH_B);
+    o=o.concat(["",need("authEmail",t("paste the email received in Validation","collez le courriel reçu dans Validation"))]);
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"animal", code:"ANI", group:"situation", name:{en:"Animal on file",fr:"Animal au dossier"},
+  desc:{en:"PETC in cabin or AVIH in hold. The passenger's age opens the line, in parentheses.",
+        fr:"PETC en cabine ou AVIH en soute. L'âge du passager ouvre la ligne, entre parenthèses."},
+  req:[{en:"Passenger age, in parentheses",fr:"Âge du passager, entre parenthèses"},
+       {en:"PETC or AVIH",fr:"PETC ou AVIH"},
+       {en:"Species + breed + age",fr:"Espèce + race + âge"},
+       {en:"Conditions",fr:"Conditions"}],
+  fields:[].concat(CALLER,[
+    F("paxAge","Passenger age","Âge du passager",{w:"third",req:1,ph:"40"}),
+    F("aniType","PETC / AVIH","PETC / AVIH",{type:"select",w:"third",req:1,def:"",
+      opts:[{v:"",en:"- select -",fr:"- choisir -"},{v:"PETC",en:"PETC (in cabin)",fr:"PETC (en cabine)"},{v:"AVIH",en:"AVIH (in hold)",fr:"AVIH (en soute)"}]}),
+    F("species","Species","Espèce",{w:"third",req:1,ph:"Dog",phFr:"Chien",chips:["Dog","Cat"],chipsFr:["Chien","Chat"]}),
+    F("breed","Breed","Race",{w:"half",req:1,ph:"Chihuahua"}),
+    F("aniAge","Animal age","Âge de l'animal",{w:"half",req:1,ph:"2yrs old",phFr:"2 ans"}),
+    F("aniCond","Conditions","Conditions",{req:1,ph:"no food",phFr:"aucune nourriture",chips:["no food","weight under 10kg","carrier approved","health certificate on file"],chipsFr:["aucune nourriture","poids sous 10 kg","cage approuvée","certificat de santé au dossier"]}),
+    ADVISED],TAIL),
+  build:function(){
+    var o=[head(),""];
+    o.push("("+need("paxAge",t("pax age","âge du pax"))+") "+need("aniType","PETC/AVIH")+" "+
+           need("species",t("species","espèce"))+" - "+need("breed",t("breed","race"))+" - "+
+           need("aniAge",t("animal age","âge de l'animal"))+", "+need("aniCond",t("conditions","conditions")));
+    return o.concat(advisedLines(),[""],tailLines());
+  }},
+
+{ id:"special", code:"SPC", group:"situation", name:{en:"Special needs",fr:"Besoins particuliers"},
+  desc:{en:"Seat request or special service. One dense line: request, seat, source file, flight, seat number, amount and system.",
+        fr:"Demande de siège ou service spécial. Une seule ligne dense : demande, siège, dossier source, vol, numéro de siège, montant et système."},
+  req:[{en:"RQDT code",fr:"Code RQDT"},
+       {en:"Seat description + reference file number",fr:"Description du siège + numéro du dossier de référence"},
+       {en:"Flight number + seat number",fr:"Numéro de vol + numéro de siège"},
+       {en:"Mandatory conditions",fr:"Conditions obligatoires"},
+       {en:"Amount paid and in which system",fr:"Montant payé et dans quel système"}],
+  fields:[].concat(CALLER,[
+    F("rqCode","RQDT code","Code RQDT",{w:"half",req:1,ph:"RQSR",chips:["RQSR","RQST","WCHR","WCHS","WCHC","MAAS"]}),
+    F("seatDesc","Seat description","Description du siège",{w:"half",req:1,ph:"REG ais trvw"}),
+    F("refFile","Reference file number","Numéro du dossier de référence",{w:"third",req:1,ph:"1234567"}),
+    F("flightNo","Flight number","Numéro de vol",{w:"third",req:1,ph:"XX123"}),
+    F("seatNo","Seat number","Numéro de siège",{w:"third",req:1,ph:"8ab"}),
+    F("amount","Amount paid","Montant payé",{w:"half",req:1,ph:"30cad"}),
+    F("system","Paid in which system","Payé dans quel système",{w:"half",req:1,ph:"QuillPay",chips:["QuillPay","Salesforce","QuillTour"]}),
+    F("spcCond","Mandatory conditions","Conditions obligatoires",{type:"area",ph:"Pax advised the seat is not guaranteed",phFr:"Pax avisé que le siège n'est pas garanti"})],TAIL),
+  build:function(){
+    var o=[head(),""];
+    o.push("Req "+need("rqCode","RQDT")+" "+need("seatDesc",t("seat description","description du siège"))+
+           " file "+need("refFile",t("file number","numéro de dossier"))+" on "+need("flightNo",t("flight","vol"))+
+           " "+need("seatNo",t("seat","siège"))+", "+need("amount",t("amount","montant"))+" in "+need("system",t("system","système")));
+    if(val("spcCond")) o.push(val("spcCond"));
+    return o.concat([""],tailLines());
+  }},
+
+{ id:"other", code:"GEN", group:"situation", name:{en:"Other scenario",fr:"Autre scénario"},
+  desc:{en:"The remaining decision-tree scenarios that need a manual note but have no published example: assistance at destination, potential fraud, split file, manual invoice, fund transfer, refund within 24 h. Built from the general rules.",
+        fr:"Les autres scénarios de l'arbre de décision exigeant une note manuelle sans exemple publié : assistance à destination, fraude potentielle, dossier scindé, facture manuelle, transfert de fonds, remboursement en moins de 24 h. Construit à partir des règles générales."},
+  req:[{en:"Action performed during the call",fr:"Action posée pendant l'appel"},
+       {en:"Summary of all information given",fr:"Résumé de toute l'information donnée"},
+       {en:"Summary of all action taken",fr:"Résumé de toutes les actions posées"}],
+  fields:[].concat(CALLER,[
+    F("scenario","Scenario / action performed","Scénario / action posée",{req:1,ph:"Assistance at destination",phFr:"Assistance à destination",
+      chips:["Assistance at destination","Potential fraud","New reservation with split file","Manual invoice to be sent to client",
+             "Fund transfer between files","Refund within 24 hours of reservation","Call to lead Agents re escalation form"],chipsFr:["Assistance à destination","Fraude potentielle","Nouvelle réservation avec dossier scindé","Facture manuelle à envoyer au client",
+             "Transfert de fonds entre dossiers","Remboursement dans les 24 heures suivant la réservation","Appel aux Agents lead concernant le formulaire d'escalade"]}),
+    F("infoGiven","Information given to the customer or agent","Information donnée au client ou à l'agent",{type:"area",req:1}),
+    F("actionTaken","Action taken during the call","Action posée pendant l'appel",{type:"area",req:1}),
+    ADVISED],TAIL),
+  build:function(){
+    var o=[head(),""];
+    o.push(need("scenario",t("scenario","scénario")),"");
+    o.push(need("infoGiven",t("summary of information given","résumé de l'information donnée")),"");
+    o.push(need("actionTaken",t("summary of action taken","résumé des actions posées")));
+    return o.concat([""],advisedLines(),[""],tailLines());
+  }}
+];
+
+function tplById(id){ for(var i=0;i<TPL.length;i++) if(TPL[i].id===id) return TPL[i]; return TPL[0]; }
+
+/* ============================ procedure tips ============================ */
+var TIPS = {
+  package:{en:"Enter the final payment date taking the Book Early option into account when it applies.",
+           fr:"Inscrivez la date de paiement final en tenant compte de l'option Réservez Tôt s'il y a lieu."},
+  animal: {en:"For the full conditions, refer to the PETC or AVIH procedures before you write the note.",
+           fr:"Pour les conditions complètes, consultez les procédures PETC ou AVIH avant de rédiger la note."},
+  csc:    {en:"For the full process, follow Call management for customer service claims.",
+           fr:"Pour le processus complet, suivez Gestion des appels pour les réclamations au service à la clientèle."},
+  tour:   {en:"The guaranteed departure status must appear in the note whether it is guaranteed or not.",
+           fr:"Le statut du départ garanti doit figurer dans la note, qu'il soit garanti ou non."},
+  other:  {en:"No published example exists for these scenarios. This layout follows the general rules for manual notes.",
+           fr:"Aucun exemple publié n'existe pour ces scénarios. Cette mise en page suit les règles générales des notes manuelles."}
+};
+
+var RULES = [
+  {en:"A note is added automatically by AI after every call. Write a manual note only when the procedure calls for it.",
+   fr:"Une note est ajoutée automatiquement par l'IA après chaque appel. Rédiger une note manuelle seulement quand la procédure l'exige."},
+  {en:"Write the note in the language spoken during the call.",
+   fr:"Rédiger la note dans la langue parlée pendant l'appel."},
+  {en:"A note can never be deleted. To fix one, enter a new note stating Correction.",
+   fr:"Une note ne peut jamais être supprimée. Pour la corriger, entrer une nouvelle note indiquant Correction."},
+  {en:"To remove a sentence from an automatic note, untick its box. Manually added lines must be deleted with the keyboard.",
+   fr:"Pour retirer une phrase d'une note automatique, décocher sa case. Les lignes ajoutées manuellement doivent être supprimées au clavier."},
+  {en:"Tick the boxes for the action performed during the call: reservation, modification, apply payment, and so on.",
+   fr:"Cocher les cases de l'action posée pendant l'appel : réservation, modification, appliquer un paiement, etc."},
+  {en:"Replace the information between parentheses with the name of the person who contacted you, agent or client.",
+   fr:"Remplacer l'information entre parenthèses par le nom de la personne qui vous a contacté, agent ou client."},
+  {en:"Summarize every piece of information given to the customer or agent, and every action taken.",
+   fr:"Résumer toute information donnée au client ou à l'agent, ainsi que toute action posée."},
+  {en:"Write the age of every child between 2 and 11 years old.",
+   fr:"Inscrire l'âge de chaque enfant de 2 à 11 ans."},
+  {en:"Write the amount of the payment or the refund when applicable.",
+   fr:"Inscrire le montant du paiement ou du remboursement s'il y a lieu."},
+  {en:"Sign with your name, your phone extension and your department.",
+   fr:"Signer avec votre nom, votre poste téléphonique et votre département."},
+  {en:"All notes are entered from Salesforce. The Notes section carries notes from every Quillridge source system.",
+   fr:"Toutes les notes sont saisies depuis Salesforce. La section Notes regroupe les notes de tous les systèmes sources de Quillridge."}
+];
+
+/* ============================ interface strings ============================ */
+var UI={
+ lblSub:{en:"Salesforce manual notes",fr:"Notes manuelles Salesforce"},
+ lblName:{en:"Your name",fr:"Votre nom"},
+ lblExt:{en:"Extension",fr:"Poste"},
+ lblDept:{en:"Dept",fr:"Serv."},
+ lblLang:{en:"Language",fr:"Langue"},
+ lblGuideBtn:{en:"Do I need a note?",fr:"Ai-je besoin d'une note ?"},
+ lblGuideBtnSub:{en:"Walk the decision tree",fr:"Suivre l'arbre de décision"},
+ lblBooking:{en:"Booking notes",fr:"Notes de réservation"},
+ lblSituation:{en:"Situation notes",fr:"Notes de situation"},
+ lblRules:{en:"Ground rules",fr:"Règles de base"},
+ lblReq:{en:"Required elements",fr:"Éléments obligatoires"},
+ lblProcReq:{en:"The procedure requires",fr:"La procédure exige"},
+ lblPreview:{en:"Note preview",fr:"Aperçu de la note"},
+ lblSlipTop:{en:"Salesforce · manual note",fr:"Salesforce · note manuelle"},
+ lblSlipBot:{en:"paste as-is",fr:"coller tel quel"},
+ copyBtn:{en:"Copy note",fr:"Copier la note"},
+ clearBtn:{en:"Clear fields",fr:"Effacer les champs"},
+ lblCorrection:{en:"Correction of an earlier note",fr:"Correction d'une note antérieure"},
+ lblRuleK:{en:"Rule",fr:"Règle"},
+ lblGuideTitle:{en:"Do I need to leave a note?",fr:"Dois-je laisser une note ?"},
+ guideRestart:{en:"Start over",fr:"Recommencer"},
+ guideClose:{en:"Close",fr:"Fermer"}
+};
+var UI_RULEBODY={
+ en:"A note can never be deleted once entered. To fix one, tick <b>Correction</b> above and enter a new note.",
+ fr:"Une note ne peut jamais être supprimée une fois saisie. Pour la corriger, cochez <b>Correction</b> ci-dessus et entrez une nouvelle note."
+};
+function applyUI(){
+  for(var k in UI){ var n=document.getElementById(k); if(n) n.textContent=L(UI[k]); }
+  var rb=document.getElementById("lblRuleBody"); if(rb) rb.innerHTML=L(UI_RULEBODY);
+}
+
+/* ============================ dom helpers ============================ */
+function $(id){ return document.getElementById(id); }
+function el(tag,cls,txt){ var n=document.createElement(tag); if(cls) n.className=cls; if(txt!==undefined) n.textContent=txt; return n; }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* ============================ rail ============================ */
+function renderRail(){
+  var b=$("railBooking"), s=$("railSituation");
+  b.innerHTML=""; s.innerHTML="";
+  TPL.forEach(function(x){
+    var btn=el("button","stub");
+    btn.type="button";
+    btn.appendChild(el("span",null,L(x.name)));
+    btn.appendChild(el("span","code",x.code));
+    btn.setAttribute("aria-current", x.id===S.tpl ? "true":"false");
+    btn.addEventListener("click",function(){ selectTpl(x.id); });
+    (x.group==="booking"?b:s).appendChild(btn);
+  });
+  var ul=$("rulesList"); ul.innerHTML="";
+  RULES.forEach(function(r){ ul.appendChild(el("li",null,L(r))); });
+}
+
+function selectTpl(id){
+  S.tpl=id; S.v={};
+  renderRail(); renderForm(); render();
+  var pane=$("pane"); if(pane) pane.scrollTop=0;
+}
+
+/* ============================ form ============================ */
+function renderForm(){
+  var tpl=tplById(S.tpl);
+  $("tplTitle").textContent=L(tpl.name);
+  $("tplDesc").textContent=L(tpl.desc);
+  $("slipType").textContent=L(tpl.name);
+
+  var rl=$("reqList"); rl.innerHTML="";
+  tpl.req.forEach(function(r){ rl.appendChild(el("li",null,L(r))); });
+
+  var wrap=$("fields"); wrap.innerHTML="";
+  tpl.fields.forEach(function(f){ wrap.appendChild(fieldNode(f)); });
+
+  // seed defaults
+  tpl.fields.forEach(function(f){ if(f.def!==undefined && S.v[f.k]===undefined) S.v[f.k]=f.def; });
+
+  renderNotices(tpl);
+}
+
+function labelNode(f){
+  var lab=el("label",null,L(f));
+  lab.setAttribute("for","fld_"+f.k);
+  if(f.req){ var st=el("span","star","*"); lab.appendChild(st); }
+  return lab;
+}
+
+function fieldNode(f){
+  var box=el("div","f"+(f.w?" "+f.w:""));
+
+  if(f.type==="checks"){
+    if(L(f)) box.appendChild(el("span","flabel",L(f)));
+    var row=el("div","checks");
+    f.items.forEach(function(i){
+      var lab=el("label","chk");
+      var cb=el("input"); cb.type="checkbox"; cb.checked=!!S.v[i.k];
+      cb.addEventListener("change",function(){ S.v[i.k]=cb.checked; render(); });
+      lab.appendChild(cb); lab.appendChild(el("span",null,L(i)));
+      row.appendChild(lab);
+    });
+    box.appendChild(row);
+    return box;
+  }
+
+  if(f.type==="fare"){
+    box.appendChild(labelNode(f));
+    var g=el("div","fare");
+    var base=mkInput(f.k+"_b","899.00"), tax=mkInput(f.k+"_t","300.00");
+    var out=el("div","out","0.00"); out.id="out_"+f.k;
+    g.appendChild(base); g.appendChild(el("span","op","+")); g.appendChild(tax);
+    g.appendChild(el("span","op","tx =")); g.appendChild(out);
+    box.appendChild(g);
+    var g2=el("div","fare2");
+    var pax=mkInput(f.k+"_p","2"); pax.setAttribute("aria-label","PAX");
+    var grand=el("div","grand"); grand.id="grand_"+f.k;
+    g2.appendChild(el("span","op","x")); g2.appendChild(pax);
+    g2.appendChild(el("span","paxlab","PAX")); g2.appendChild(grand);
+    box.appendChild(g2);
+    return box;
+  }
+
+  box.appendChild(labelNode(f));
+
+  if(f.type==="select"){
+    var sel=el("select"); sel.id="fld_"+f.k;
+    (f.opts||[]).forEach(function(o){
+      var op=el("option",null,L(o)); op.value=o.v; sel.appendChild(op);
+    });
+    sel.value=S.v[f.k]!==undefined?S.v[f.k]:(f.def||"");
+    sel.addEventListener("change",function(){ S.v[f.k]=sel.value; render(); });
+    box.appendChild(sel);
+  } else if(f.type==="area"){
+    var ta=el("textarea"); ta.id="fld_"+f.k; ta.placeholder=phOf(f);
+    ta.value=S.v[f.k]||"";
+    ta.addEventListener("input",function(){ S.v[f.k]=ta.value; render(); });
+    box.appendChild(ta);
+  } else {
+    box.appendChild(mkInput(f.k,phOf(f)));
+  }
+
+  var chipSet=(S.lang==="fr" && f.chipsFr) ? f.chipsFr : f.chips;
+  if(chipSet && chipSet.length){
+    var cw=el("div","chips");
+    chipSet.forEach(function(c){
+      var b=el("button","chip",c); b.type="button";
+      b.addEventListener("click",function(){
+        if(f.type==="area"){
+          var cur=S.v[f.k]||""; S.v[f.k]= cur ? cur.replace(/\s*$/,"")+"\n"+c : c;
+        } else { S.v[f.k]=c; }
+        renderForm(); render();
+        var t2=$("fld_"+f.k); if(t2) t2.focus();
+      });
+      cw.appendChild(b);
+    });
+    box.appendChild(cw);
+  }
+  if(f.hint) box.appendChild(el("div","hint",L(f.hint)));
+  return box;
+}
+
+function phOf(f){ return (S.lang==="fr" && f.phFr) ? f.phFr : (f.ph||""); }
+function mkInput(k,ph){
+  var i=el("input"); i.type="text"; i.id="fld_"+k; i.placeholder=ph||"";
+  i.autocomplete="off"; i.spellcheck=false;
+  i.value=S.v[k]!==undefined?S.v[k]:"";
+  i.addEventListener("input",function(){ S.v[k]=i.value; render(); });
+  return i;
+}
+
+function renderNotices(tpl){
+  var box=$("notices"); box.innerHTML="";
+  var tip=TIPS[tpl.id];
+  if(tip){
+    var n=el("div","notice");
+    n.appendChild(el("span","k","Procedure"));
+    n.appendChild(el("span",null,L(tip)));
+    box.appendChild(n);
+  }
+  if(tpl.group==="situation"){
+    var m=el("div","notice");
+    m.appendChild(el("span","k","Where"));
+    m.appendChild(el("span",null,t("Enter this note in the reservation form of every file concerned.",
+                                   "Saisir cette note dans le formulaire de reservation de chaque dossier concerne.")));
+    box.appendChild(m);
+  }
+  if(!sigOK()){
+    var w=el("div","notice warn");
+    w.appendChild(el("span","k","Signature"));
+    w.appendChild(el("span",null,t("Fill in your name, extension and department at the top. The note is not valid without them.",
+                                   "Remplissez votre nom, votre poste et votre departement en haut. La note n'est pas valide sans eux.")));
+    box.appendChild(w);
+  }
+}
+
+function sigOK(){ return !!($("sigName").value.trim() && $("sigExt").value.trim() && $("sigDept").value.trim()); }
+
+/* ============================ note assembly ============================ */
+function signature(){
+  var n=$("sigName").value.trim() || PH_A+t("your name","votre nom")+PH_B;
+  var e=$("sigExt").value.trim()  || PH_A+t("extension","poste")+PH_B;
+  var d=$("sigDept").value.trim() || "TEAM";
+  return "--- "+n+" "+e+" "+d+" ---";
+}
+
+function buildNote(){
+  var tpl=tplById(S.tpl);
+  var lines=tpl.build();
+  if(S.correction) lines=[t("Correction:","Correction :"),""].concat(lines);
+  lines=lines.concat(["",signature()]);
+  var txt=lines.join("\n");
+  txt=txt.replace(/\n{3,}/g,"\n\n").replace(/[ \t]+\n/g,"\n").trim();
+  return txt;
+}
+
+function render(){
+  // fare readouts
+  tplById(S.tpl).fields.forEach(function(f){
+    if(f.type!=="fare") return;
+    var b=num(S.v[f.k+"_b"]), x=num(S.v[f.k+"_t"]), p=parseInt(val(f.k+"_p"),10);
+    var per=(b||0)+(x||0);
+    var o=$("out_"+f.k); if(o) o.textContent=fmt(per);
+    var g=$("grand_"+f.k);
+    if(g) g.innerHTML = (per>0 && p>0) ? t("total collected ","total perçu ")+"<b>"+fmt(per*p)+"</b>" : "";
+  });
+
+  var txt=buildNote();
+  var html=esc(txt).replace(/‹([^›]*)›/g,'<span class="ph">($1)</span>');
+  $("preview").innerHTML=html;
+  $("charCount").textContent=txt.length+t(" char"," car.");
+  $("slipLang").textContent=S.lang.toUpperCase();
+
+  // required meter
+  var tpl=tplById(S.tpl), total=0, done=0;
+  tpl.fields.forEach(function(f){
+    if(!f.req) return;
+    total++;
+    if(f.type==="fare"){ if(fareFilled(f.k)) done++; }
+    else if(val(f.k)) done++;
+  });
+  var pct= total? Math.round(done/total*100):0;
+  $("meterTxt").textContent=done+"/"+total;
+  $("meterBar").style.width=pct+"%";
+  $("meter").className="meter"+(done===total?" done":"");
+}
+
+/* ============================ decision guide ============================ */
+var SCEN=[
+ {en:"Customer Service case (CSC)",fr:"Dossier au service à la clientèle (CSC)"},
+ {en:"Favour requested to a lead, accepted or declined",fr:"Faveur demandée à un lead, acceptée ou refusée"},
+ {en:"Escalated call to a lead",fr:"Appel escaladé à un lead"},
+ {en:"Call to lead Agents regarding an escalation form sent or not sent",fr:"Appel aux Agents lead concernant un formulaire d'escalade envoyé ou non"},
+ {en:"Assistance at destination",fr:"Assistance à destination"},
+ {en:"Potential fraud",fr:"Fraude potentielle"},
+ {en:"Request for authorization for another person to access the file",fr:"Demande d'autorisation pour qu'une autre personne accède au dossier"},
+ {en:"New reservation with a split file",fr:"Nouvelle réservation avec dossier scindé"},
+ {en:"Animal on file (AVIH or PETC)",fr:"Animal au dossier (AVIH ou PETC)"},
+ {en:"Special needs",fr:"Besoins particuliers"},
+ {en:"Manual invoice to be sent to the client",fr:"Facture manuelle à envoyer au client"},
+ {en:"Fund transfers between files",fr:"Transferts de fonds entre dossiers"},
+ {en:"Refund within 24 hours of the reservation",fr:"Remboursement dans les 24 heures suivant la réservation"}
+];
+
+var NODES={
+  start:{q:{en:"Is the Booking view open in Salesforce?",fr:"La vue Réservation est-elle ouverte dans Salesforce ?"},
+    opts:[{l:{en:"Yes",fr:"Oui"},to:"scen"},{l:{en:"No",fr:"Non"},to:"what"}]},
+  what:{q:{en:"What is the call about?",fr:"De quoi l'appel traite-t-il ?"},
+    opts:[{l:{en:"A quote",fr:"Une soumission"},to:"o_quote"},
+          {l:{en:"A new reservation",fr:"Une nouvelle réservation"},to:"o_newres"},
+          {l:{en:"An existing reservation",fr:"Une réservation existante"},to:"existing"}]},
+  existing:{q:{en:"How did the call happen?",fr:"Comment l'appel s'est-il fait ?"},
+    opts:[{l:{en:"Warm transfer",fr:"Transfert supervisé"},to:"o_form"},
+          {l:{en:"Outgoing call",fr:"Appel sortant"},to:"o_form"},
+          {l:{en:"Callback",fr:"Rappel"},to:"delay"},
+          {l:{en:"Incoming call",fr:"Appel entrant"},to:"delay"}]},
+  delay:{step:{en:"Add the reservation number in the Salesforce case. There is a 5-minute delay once the call has ended.",
+               fr:"Ajouter le numéro de réservation dans le dossier Salesforce. Un délai de 5 minutes s'applique une fois l'appel terminé."},
+         to:"scen"},
+  scen:{q:{en:"Is this one of the following scenarios?",fr:"S'agit-il de l'un des scénarios suivants ?"},list:SCEN,
+    opts:[{l:{en:"Yes",fr:"Oui"},to:"o_each"},{l:{en:"No",fr:"Non"},to:"o_none"}]},
+
+  o_quote:{out:1,note:false,
+    verdict:{en:"Do not leave a note.",fr:"Ne laissez pas de note."},
+    body:{en:"Ensure that the client contact is linked to the quote.",fr:"Assurez-vous que le contact client est lié à la soumission."}},
+  o_newres:{out:1,note:true,
+    verdict:{en:"Yes, write a manual note.",fr:"Oui, rédigez une note manuelle."},
+    body:{en:"The booking does not exist in Salesforce yet.",fr:"La réservation n'existe pas encore dans Salesforce."},
+    where:{en:"Enter the note directly in the reservation system.",fr:"Saisir la note directement dans le système de réservation."}},
+  o_form:{out:1,note:true,
+    verdict:{en:"Yes, write a manual note.",fr:"Oui, rédigez une note manuelle."},
+    body:{en:"Existing reservation reached by warm transfer or outgoing call.",fr:"Réservation existante jointe par transfert supervisé ou appel sortant."},
+    where:{en:"Enter the note in the reservation form.",fr:"Saisir la note dans le formulaire de réservation."}},
+  o_each:{out:1,note:true,
+    verdict:{en:"Yes, write a manual note.",fr:"Oui, rédigez une note manuelle."},
+    body:{en:"This scenario always requires a manual note.",fr:"Ce scénario exige toujours une note manuelle."},
+    where:{en:"Enter the note in the reservation form of every file concerned.",fr:"Saisir la note dans le formulaire de réservation de chaque dossier concerné."}},
+  o_none:{out:1,note:false,
+    verdict:{en:"Do not leave a note.",fr:"Ne laissez pas de note."},
+    body:{en:"Validate that the correct reservation is linked to the case.",fr:"Validez que la bonne réservation est liée au dossier."}}
+};
+
+var gPath=[];
+function guideGo(id){ gPath.push(id); renderGuide(); }
+function guideReset(){ gPath=["start"]; renderGuide(); }
+
+function renderGuide(){
+  var id=gPath[gPath.length-1], n=NODES[id], body=$("guideBody");
+  body.innerHTML="";
+
+  var cr=$("crumbs"); cr.innerHTML="";
+  gPath.forEach(function(p){
+    var nn=NODES[p]; if(!nn) return;
+    var label = nn.q ? L(nn.q).replace(/\?$/,"") : (nn.step ? t("5-min delay","délai 5 min") : t("Result","Résultat"));
+    cr.appendChild(el("span",null,label.length>34?label.slice(0,32)+"...":label));
+  });
+
+  if(n.step){
+    var s=el("div","outcome");
+    s.appendChild(el("p","verdict",t("Before anything else","Avant toute chose")));
+    s.appendChild(el("p",null,L(n.step)));
+    var cont=el("button","gopt",t("Continue","Continuer")); cont.type="button";
+    cont.style.marginTop="10px";
+    cont.addEventListener("click",function(){ guideGo(n.to); });
+    s.appendChild(cont);
+    body.appendChild(s);
+    return;
+  }
+
+  if(n.out){
+    var o=el("div","outcome"+(n.note?"":" no"));
+    o.appendChild(el("p","verdict",L(n.verdict)));
+    o.appendChild(el("p",null,L(n.body)));
+    if(n.where) o.appendChild(el("div","where",L(n.where)));
+    if(n.note){
+      var go=el("button","gopt",t("Pick a template","Choisir un modèle")); go.type="button";
+      go.style.marginTop="10px";
+      go.addEventListener("click",function(){ $("guide").hidden=true; $("guideOpen").focus(); });
+      o.appendChild(go);
+    }
+    body.appendChild(o);
+    return;
+  }
+
+  body.appendChild(el("p","gq",L(n.q)));
+  if(n.list){
+    var ul=el("ul","scenarios");
+    n.list.forEach(function(x){ ul.appendChild(el("li",null,L(x))); });
+    body.appendChild(ul);
+  }
+  var ow=el("div","gopts");
+  n.opts.forEach(function(o){
+    var b=el("button","gopt",L(o.l)); b.type="button";
+    b.addEventListener("click",function(){ guideGo(o.to); });
+    ow.appendChild(b);
+  });
+  body.appendChild(ow);
+}
+
+/* ============================ copy ============================ */
+function toast(msg){
+  var el2=$("toast"); el2.textContent=msg; el2.classList.add("show");
+  clearTimeout(el2._t); el2._t=setTimeout(function(){ el2.classList.remove("show"); },1600);
+}
+function copyNote(){
+  var txt=buildNote();
+  var done=function(){
+    toast(t("Note copied. Paste it in Salesforce.","Note copiée. Collez-la dans Salesforce."));
+    var b=$("copyBtn");
+    b.textContent=t("Copied","Copiée");
+    setTimeout(function(){ b.textContent=L(UI.copyBtn); },1400);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done, function(){ fallback(txt,done); });
+  } else fallback(txt,done);
+}
+function fallback(txt,done){
+  var ta=document.createElement("textarea");
+  ta.value=txt; ta.setAttribute("readonly","");
+  ta.style.position="fixed"; ta.style.top="-1000px";
+  document.body.appendChild(ta); ta.select();
+  var ok=false;
+  try{ ok=document.execCommand("copy"); }catch(e){ ok=false; }
+  document.body.removeChild(ta);
+  if(ok) done(); else toast(t("Copy blocked. Select the note and copy it manually.","Copie bloquée. Sélectionnez la note et copiez-la manuellement."));
+}
+
+/* ============================ wiring ============================ */
+function saveSig(){
+  try{ localStorage.setItem("ccc.sig",JSON.stringify({
+    n:$("sigName").value, e:$("sigExt").value, d:$("sigDept").value })); }catch(e){}
+}
+function loadSig(){
+  try{
+    var s=JSON.parse(localStorage.getItem("ccc.sig")||"{}");
+    if(s.n) $("sigName").value=s.n;
+    if(s.e) $("sigExt").value=s.e;
+    $("sigDept").value=s.d||"TEAM";
+    var lg=localStorage.getItem("ccc.lang"); if(lg==="fr"||lg==="en") S.lang=lg;
+  }catch(e){ $("sigDept").value="TEAM"; }
+}
+function setLang(l){
+  S.lang=l;
+  $("langEN").setAttribute("aria-pressed", l==="en"?"true":"false");
+  $("langFR").setAttribute("aria-pressed", l==="fr"?"true":"false");
+  document.documentElement.lang=l;
+  try{ localStorage.setItem("ccc.lang",l); }catch(e){}
+  applyUI(); renderRail(); renderForm(); render();
+  if(!$("guide").hidden) renderGuide();
+}
+
+["sigName","sigExt","sigDept"].forEach(function(id){
+  $(id).addEventListener("input",function(){ saveSig(); render(); renderNotices(tplById(S.tpl)); });
+});
+$("langEN").addEventListener("click",function(){ setLang("en"); });
+$("langFR").addEventListener("click",function(){ setLang("fr"); });
+$("copyBtn").addEventListener("click",copyNote);
+$("clearBtn").addEventListener("click",function(){ S.v={}; S.correction=false; $("correctionMode").checked=false; renderForm(); render(); });
+$("correctionMode").addEventListener("change",function(){ S.correction=this.checked; render(); });
+$("guideOpen").addEventListener("click",function(){ $("guide").hidden=false; guideReset(); $("guide").scrollIntoView({block:"start"}); });
+$("guideClose").addEventListener("click",function(){ $("guide").hidden=true; $("guideOpen").focus(); });
+$("guideRestart").addEventListener("click",guideReset);
+
+document.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); copyNote(); }
+});
+
+loadSig();
+setLang(S.lang);
+})();
+</script>

@@ -1,0 +1,9 @@
+# Nothing generated here, but keep editor and OS noise out.
+.DS_Store
+*~
+.vscode/
+.idea/
+
+# Environment files never belong in this repo — it has no configuration.
+.env
+.env.*
