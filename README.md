@@ -138,4 +138,4 @@ it should not have to touch layout code.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Notes on what the licence covers: [NOTICE](NOTICE).
